@@ -20,6 +20,7 @@
 #include <libdevcore/AnsiColorized.h>
 
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/optional/optional.hpp>
 
 #include <stdexcept>
 #include <string>
@@ -101,6 +102,8 @@ string TestFunctionCall::format(
 		else
 		{
 			bytes output = m_rawBytes;
+			if (!output.empty())
+				cout << output << endl;
 			bool const isFailure = m_failure;
 			result = isFailure ?
 				failure :
@@ -155,7 +158,11 @@ string TestFunctionCall::formatBytesParameters(
 
 	/// Create parameters from Contract ABI. Used to generate values for
 	/// auto-correction during interactive update routine.
-	ParameterList abiParams = ContractABIUtils().parametersFromJson(m_contractABI, functionName);
+	ParameterList abiParams = ContractABIUtils().parametersFromJson(
+		_errorReporter,
+		m_contractABI,
+		functionName
+	);
 
 	/// If parameter count does not match, take types defined by ABI, but only
 	/// if the contract ABI is defined (needed for format tests where the actual

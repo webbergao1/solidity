@@ -37,6 +37,7 @@ public:
 	/// Parses and translates Solidity's ABI types as Json string into
 	/// a list of internal type representations of isoltest.
 	ParameterList parametersFromJson(
+		ErrorReporter& _errorReporter,
 		Json::Value const& _contractABI,
 		std::string const& _functionName
 	) const;
@@ -51,7 +52,7 @@ private:
 	/// `string` -> [`Unsigned`, `Unsigned`, `String`]
 	/// `bytes` -> [`Unsigned`, `Unsigned`, `HexString`]
 	/// ...
-	std::vector<ABIType> fromTypeName(std::string const& _type) const;
+	boost::optional<std::vector<ABIType>> fromTypeName(Json::Value const& _functionOutput) const;
 };
 
 }

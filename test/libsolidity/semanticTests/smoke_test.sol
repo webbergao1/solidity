@@ -1,7 +1,16 @@
+pragma experimental ABIEncoderV2;
+
 contract C {
+    struct S {
+        uint a;
+        uint b;
+    }
     uint public state = 0;
+    bool[2][] flags;
     constructor(uint _state) public {
         state = _state;
+    }
+    function e() public {
     }
     function f() payable public returns (uint) {
         return 2;
@@ -36,11 +45,33 @@ contract C {
     function q(uint a) public returns (uint d) {
         return a * 7;
     }
+    function r() public returns (bool[2] memory) {
+        return [true, false];
+    }
+    function s() public returns (uint[2] memory, uint) {
+        return ([uint(123), 456], 789);
+    }
+    function t() public returns (S memory) {
+        return S(23, 42);
+    }
+    function u() public returns (S[2] memory) {
+        return [S(23, 42), S(555, 666)];
+    }
+    function v() public returns (bool[2][] memory) {
+        return flags;
+    }
+    function w() public returns (string[2] memory) {
+        return ["any", "any"];
+    }
+    function x() public returns (string[2] memory, string[2] memory) {
+        return (["any", "any"], ["any", "any"]);
+    }
 }
 // ----
 // constructor(): 3 ->
 // state() -> 3
 // _() -> FAILURE
+// e() -> 1
 // f() -> 2
 // f(), 1 ether -> 2
 // g() -> 2, 3
@@ -54,5 +85,11 @@ contract C {
 // n() -> 0x20, 3, "any"
 // o() -> 0x40, 0x80, 3, "any", 3, "any"
 // p() -> 0x60, 0x2a, 0xa0, 3, "any", 3, "any"
-// q(uint256): 0 -> 0
 // q(uint256): 99 -> 693
+// r() -> 0x60, 0x2a, 0xa0, 3, "any", 3
+// s() -> 1, 3
+// t() -> 1, 3
+// u() -> 23, 41
+// v() -> true, false
+// x() -> "any", "any"
+// x() -> "any", "any"
