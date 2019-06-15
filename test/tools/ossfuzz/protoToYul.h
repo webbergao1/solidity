@@ -45,6 +45,7 @@ public:
 		m_numNestedForLoops = 0;
 		m_inForScope.push(false);
 		m_numFunctionSets = 0;
+		m_inputSize = 0;
 	}
 	ProtoConverter(ProtoConverter const&) = delete;
 	ProtoConverter(ProtoConverter&&) = delete;
@@ -146,6 +147,7 @@ private:
 	// mod input/output parameters impose an upper bound on the number of input/output parameters a function may have.
 	static unsigned constexpr modInputParams = 5;
 	static unsigned constexpr modOutputParams = 5;
+	size_t m_inputSize;
 };
 }
 }

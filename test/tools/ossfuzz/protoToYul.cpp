@@ -16,6 +16,7 @@
 */
 
 #include <test/tools/ossfuzz/protoToYul.h>
+#include <test/tools/ossfuzz/yulOptimizerFuzzDictionary.h>
 #include <libsolidity/codegen/YulUtilFunctions.h>
 #include <boost/range/algorithm_ext/erase.hpp>
 #include <libyul/Exceptions.h>
@@ -35,8 +36,11 @@ string ProtoConverter::createHex(string const& _hexBytes) const
 		tmp = tmp.substr(0, 64);
 	}
 	// We need this awkward if case because hex literals cannot be empty.
+	// Use a dictionary token.
+	unsigned indexVar = m_inputSize * _hexBytes.size();
 	if (tmp.empty())
-		tmp = "1";
+		tmp = dictionary[indexVar % dictionary.size()];
+	yulAssert(tmp.size() <= 64, "Proto Fuzzer: Dictionary token too large");
 	return tmp;
 }
 
@@ -937,6 +941,9 @@ void ProtoConverter::visit(FunctionDefinition const& _x)
 
 void ProtoConverter::visit(Program const& _x)
 {
+	// Record input size to be used to index dictionary token.
+	m_inputSize = _x.ByteSizeLong();
+
 	/* Program template is as follows
 	 *      Four Globals a_0, a_1, a_2, and a_3 to hold up to four function return values
 	 *
