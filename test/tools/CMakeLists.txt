@@ -23,8 +23,8 @@ add_executable(isoltest
 	../libsolidity/SemanticTest.cpp
 	../libsolidity/AnalysisFramework.cpp
 	../libsolidity/SolidityExecutionFramework.cpp
+	../EVMHost.cpp
 	../ExecutionFramework.cpp
-	../RPCSession.cpp
 	../libsolidity/ASTJSONTest.cpp
 	../libsolidity/SMTCheckerJSONTest.cpp
 	../libyul/ObjectCompilerTest.cpp
