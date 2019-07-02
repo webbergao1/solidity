@@ -9,6 +9,7 @@ contract test {
 //     "inputs":
 //     [
 //       {
+//         "internalType": "function",
 //         "name": "x",
 //         "type": "function"
 //       }

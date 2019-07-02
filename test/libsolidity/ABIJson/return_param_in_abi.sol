@@ -17,6 +17,7 @@ contract test {
 //     "outputs":
 //     [
 //       {
+//         "internalType": "test.ActionChoices",
 //         "name": "",
 //         "type": "uint8"
 //       }
@@ -29,6 +30,7 @@ contract test {
 //     "inputs":
 //     [
 //       {
+//         "internalType": "test.ActionChoices",
 //         "name": "param",
 //         "type": "uint8"
 //       }
