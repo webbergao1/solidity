@@ -33,6 +33,39 @@ using namespace dev::solidity::test;
 using namespace std;
 using namespace soltest;
 
+bytes BytesUtils::alignLeft(bytes _bytes) const
+{
+	return std::move(_bytes) + bytes(32 - _bytes.size(), 0);
+}
+
+bytes BytesUtils::alignRight(bytes _bytes) const
+{
+	return bytes(32 - _bytes.size(), 0) + std::move(_bytes);
+}
+
+bytes BytesUtils::applyAlign(
+	Parameter::Alignment _alignment,
+	ABIType& _abiType,
+	bytes _bytes
+) const
+{
+	if (_alignment != Parameter::Alignment::None)
+		_abiType.alignDeclared = true;
+
+	switch (_alignment)
+	{
+	case Parameter::Alignment::Left:
+		_abiType.align = ABIType::AlignLeft;
+		return alignLeft(std::move(_bytes));
+	case Parameter::Alignment::Right:
+		_abiType.align = ABIType::AlignRight;
+		return alignRight(std::move(_bytes));
+	default:
+		_abiType.align = ABIType::AlignRight;
+		return alignRight(std::move(_bytes));
+	}
+}
+
 bytes BytesUtils::convertBoolean(string const& _literal)
 {
 	if (_literal == "true")
@@ -164,35 +197,71 @@ string BytesUtils::formatString(bytes const& _bytes) const
 	return os.str();
 }
 
-bytes BytesUtils::alignLeft(bytes _bytes) const
-{
-	return std::move(_bytes) + bytes(32 - _bytes.size(), 0);
-}
-
-bytes BytesUtils::alignRight(bytes _bytes) const
-{
-	return bytes(32 - _bytes.size(), 0) + std::move(_bytes);
-}
-
-bytes BytesUtils::applyAlign(
-	Parameter::Alignment _alignment,
-	ABIType& _abiType,
-	bytes _bytes
+string BytesUtils::formatBytes(
+	bytes const& _bytes,
+	ABIType const& _abiType
 ) const
 {
-	if (_alignment != Parameter::Alignment::None)
-		_abiType.alignDeclared = true;
+	stringstream os;
 
-	switch (_alignment)
+	switch (_abiType.type)
 	{
-	case Parameter::Alignment::Left:
-		_abiType.align = ABIType::AlignLeft;
-		return alignLeft(std::move(_bytes));
-	case Parameter::Alignment::Right:
-		_abiType.align = ABIType::AlignRight;
-		return alignRight(std::move(_bytes));
-	default:
-		_abiType.align = ABIType::AlignRight;
-		return alignRight(std::move(_bytes));
+	case ABIType::UnsignedDec:
+		// Check if the detected type was wrong and if this could
+		// be signed. If an unsigned was detected in the expectations,
+		// but the actual result returned a signed, it would be formatted
+		// incorrectly.
+		os << formatUnsigned(_bytes);
+		break;
+	case ABIType::SignedDec:
+		os << formatSigned(_bytes);
+		break;
+	case ABIType::Boolean:
+		os << formatBoolean(_bytes);
+		break;
+	case ABIType::Hex:
+		os << formatHex(_bytes);
+		break;
+	case ABIType::HexString:
+		os << formatHexString(_bytes);
+		break;
+	case ABIType::String:
+		os << formatString(_bytes);
+		break;
+	case ABIType::Failure:
+		break;
+	case ABIType::None:
+		break;
 	}
+	return os.str();
+}
+
+string BytesUtils::formatBytesRange(
+	bytes _bytes,
+	vector<ABIType> _abiTypes,
+	bool _highlight
+)
+{
+	stringstream os;
+	auto it = _bytes.begin();
+
+	for (auto const& type: _abiTypes)
+	{
+		size_t size = type.size;
+
+		long offset = static_cast<long>(size);
+		auto offsetIter = it + offset;
+		bytes byteRange{it, offsetIter};
+
+		AnsiColorized(
+			os,
+			_highlight,
+			{dev::formatting::RED_BACKGROUND}
+		) << formatBytes(byteRange, type);
+
+		it += offset;
+		if (&type != &_abiTypes.back())
+			os << ", ";
+	}
+	return os.str();
 }

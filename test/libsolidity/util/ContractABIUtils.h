@@ -27,6 +27,8 @@ namespace solidity
 namespace test
 {
 
+using ABITypes = std::vector<ABIType>;
+
 /**
  * Utility class that aids conversions from contract ABI types stored in a
  * Json value to the internal ABIType representation of isoltest.
@@ -36,7 +38,7 @@ class ContractABIUtils
 public:
 	/// Parses and translates Solidity's ABI types as Json string into
 	/// a list of internal type representations of isoltest.
-	ParameterList parametersFromJson(
+	boost::optional<ParameterList> parametersFromJson(
 		ErrorReporter& _errorReporter,
 		Json::Value const& _contractABI,
 		std::string const& _functionName
@@ -52,7 +54,13 @@ private:
 	/// `string` -> [`Unsigned`, `Unsigned`, `String`]
 	/// `bytes` -> [`Unsigned`, `Unsigned`, `HexString`]
 	/// ...
-	boost::optional<std::vector<ABIType>> fromTypeName(Json::Value const& _functionOutput) const;
+	bool appendTypesFromName(
+		Json::Value const& _functionOutput,
+		ABITypes& _addressTypes,
+		ABITypes& _valueTypes,
+		ABITypes& _dynamicTypes,
+		bool _isCompoundType = false
+	) const;
 };
 
 }

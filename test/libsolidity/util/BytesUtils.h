@@ -32,6 +32,24 @@ namespace test
 class BytesUtils
 {
 public:
+	/// Left-aligns and pads given _bytes and returns a new
+	/// bytes array.
+	bytes alignLeft(bytes _bytes) const;
+
+	/// Right-aligns and pads given _bytes and returns a new
+	/// bytes array.
+	bytes alignRight(bytes _bytes) const;
+
+	/// Applies given _alignment to _bytes and returns a new
+	/// bytes array.
+	/// TODO: Remove abiType reference from parameter list
+	/// and return the new alignment instead.
+	bytes applyAlign(
+		Parameter::Alignment _alignment,
+		ABIType& _abiType,
+		bytes _bytes
+	) const;
+
 	/// Tries to convert \param _literal to an unpadded `bytes`
 	/// representation of the boolean number literal. Throws if conversion fails.
 	bytes convertBoolean(std::string const& _literal);
@@ -78,21 +96,15 @@ public:
 	/// a string value.
 	std::string formatString(bytes const& _bytes) const;
 
-	/// Left-aligns and pads given _bytes and returns a new
-	/// bytes array.
-	bytes alignLeft(bytes _bytes) const;
+	///
+	std::string formatBytes(bytes const& _bytes, ABIType const& _abiType) const;
 
-	/// Right-aligns and pads given _bytes and returns a new
-	/// bytes array.
-	bytes alignRight(bytes _bytes) const;
-
-	/// Applies given _alignment to _bytes and returns a new
-	/// bytes array.
-	bytes applyAlign(
-		Parameter::Alignment _alignment,
-		ABIType& _abiType,
-		bytes _bytes
-	) const;
+	/// Formats given _bytes with type information passed in _abiTypes.
+	std::string formatBytesRange(
+		bytes _bytes,
+		std::vector<ABIType> _abiTypes,
+		bool _highlight
+	);
 };
 
 }

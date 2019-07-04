@@ -97,14 +97,14 @@ struct ABIType
 {
 	enum Type
 	{
-		None,
-		Failure,
-		Boolean,
-		UnsignedDec,
-		SignedDec,
-		Hex,
-		HexString,
-		String
+		None,			// 0
+		Failure,		// 1
+		Boolean,		// 2
+		UnsignedDec,	// 3
+		SignedDec,		// 4
+		Hex,			// 5
+		HexString,		// 6
+		String			// 7
 	};
 	enum Align
 	{
@@ -112,15 +112,23 @@ struct ABIType
 		AlignRight,
 		AlignNone,
 	};
-	enum MetaInfo
-	{
-		Pointer,
-	};
+
+	explicit ABIType(
+		Type _type,
+		Align _align = ABIType::AlignRight,
+		size_t _size = 32
+	): type(_type), align(_align), size(_size) {}
+
+	ABIType(ABIType const& _other):
+		type(_other.type),
+		align(_other.align),
+		size(_other.size),
+		alignDeclared(_other.alignDeclared)
+	{}
 
 	Type type = ABIType::None;
 	Align align = ABIType::AlignRight;
-	size_t size = 0;
-	MetaInfo meta = ABIType::Pointer;
+	size_t size = 32;
 	bool alignDeclared = false;
 };
 
@@ -161,7 +169,7 @@ struct Parameter
 	/// Types that were used to encode `rawBytes`. Expectations
 	/// are usually comma separated literals. Their type is auto-
 	/// detected and retained in order to format them later on.
-	ABIType abiType;
+	ABIType abiType = ABIType{ABIType::UnsignedDec, ABIType::AlignRight, 32};
 	/// Format info attached to the parameter. It handles newlines given
 	/// in the declaration of it.
 	FormatInfo format;
