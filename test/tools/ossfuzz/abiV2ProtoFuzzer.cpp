@@ -15,12 +15,17 @@
 	along with solidity.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <test/EVMHost.h>
+#include <evmone/evmone.h>
 #include <test/tools/ossfuzz/abiV2FuzzerCommon.h>
 #include <test/tools/ossfuzz/protoToAbiV2.h>
 #include <src/libfuzzer/libfuzzer_macro.h>
 #include <fstream>
 
+static auto evmone = evmc::vm{evmc_create_evmone()};
+
 using namespace dev::test::abiv2fuzzer;
+using namespace dev::test;
 using namespace dev;
 using namespace std;
 
@@ -50,11 +55,52 @@ DEFINE_PROTO_FUZZER(Contract const& _input)
 		// We always call the function test() that is defined in proto converter template
 		hexEncodedInput = methodIdentifiers["test()"].asString();
 	}
-	catch (...)
+	catch (Exception const& e)
 	{
-		cout << contract_source << endl;
-		throw;
+		ofstream of("exceptions/" + dev::u256(dev::keccak256(byteCode)).str());
+		of << contract_source;
+		cerr << e.what() << endl;
+		return;
 	}
-	// TODO: Call evmone wrapper here
-	return;
+
+	if (const char* dump_path = getenv("PROTO_FUZZER_DUMP_CODE"))
+	{
+		ofstream of("code/" + string(dump_path));
+		of << toHex(byteCode);
+
+		ofstream of2("contract/" + string(dump_path));
+		of2 << contract_source;
+	}
+
+	// We target the default EVM which is the latest
+	langutil::EVMVersion version = {};
+	auto hostContext = EVMHost(version, evmone);
+	dev::bytes input = fromHex(hexEncodedInput);
+	evmc_message message;
+	message.kind = EVMC_CALL;
+	// FIXME: We call a function in one contract that calls a function in another.
+	// So, call depth = 2?
+	message.depth = 2;
+	// Call value is zero
+	message.value = {0};
+	message.gas = std::numeric_limits<int64_t>::max();
+	message.input_data = input.data();
+	message.input_size = input.size();
+//	std::cout << input << std::endl;
+
+	auto result = evmone.execute(
+		hostContext,
+		hostContext.getRevision(),
+		message,
+		byteCode.data(),
+		byteCode.size()
+	);
+//	std::cout << result.status_code << std::endl;
+//	solAssert(result.status_code == EVMC_SUCCESS, "Proto ABIv2 fuzzer: EVM One reported failure.");
+	solAssert(
+		result.status_code != EVMC_SUCCESS ||
+		(result.output_data[30] == u'\x03' &&
+		result.output_data[31] == u'\xE8'),
+		"Proto ABIv2 fuzzer: ABIv2 coding failure found"
+	);
 }
