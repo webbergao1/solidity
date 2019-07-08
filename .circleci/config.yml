@@ -106,13 +106,18 @@ defaults:
       - store_test_results: *store_test_results
       - store_artifacts: *artifacts_test_results
 
+  - test_ubuntu1810: &test_ubuntu1810
+      docker:
+        - image: ethereum/solidity-buildpack-deps:ubuntu1810
+      steps: *test_steps
+
   - test_ubuntu1904: &test_ubuntu1904
       docker:
         - image: ethereum/solidity-buildpack-deps:ubuntu1904
       steps: *test_steps
 
   - test_asan: &test_asan
-      <<: *test_ubuntu1904
+      <<: *test_ubuntu1810
       steps:
       - checkout
       - attach_workspace:
@@ -130,6 +135,11 @@ defaults:
       filters:
         tags:
           only: /.*/
+
+  - workflow_ubuntu1810_asan: &workflow_ubuntu1810_asan
+      <<: *workflow_trigger_on_tags
+      requires:
+        - b_ubu_asan
 
   - workflow_ubuntu1904: &workflow_ubuntu1904
       <<: *workflow_trigger_on_tags
@@ -221,6 +231,15 @@ jobs:
             apt-get -qy install python-pip
             pip install --user z3-solver
       - run: *run_proofs
+
+  b_ubu1810: &build_ubuntu1810
+    docker:
+      - image: ethereum/solidity-buildpack-deps:ubuntu1810
+    steps:
+      - checkout
+      - run: *run_build
+      - store_artifacts: *artifacts_solc
+      - persist_to_workspace: *artifacts_executables
 
   b_ubu: &build_ubuntu1904
     docker:
@@ -388,10 +407,10 @@ jobs:
 
   # x64 ASAN build, for testing for memory related bugs
   b_ubu_asan: &b_ubu_asan
-    <<: *build_ubuntu1904
+    <<: *build_ubuntu1810
     environment:
       CMAKE_OPTIONS: -DSANITIZE=address
-      CMAKE_BUILD_TYPE: Release
+      CMAKE_BUILD_TYPE: Debug
     steps:
       - checkout
       - run: *run_build
@@ -425,7 +444,8 @@ jobs:
       - store_artifacts: *artifacts_test_results
 
   t_ubu_asan_cli:
-    <<: *t_ubu_cli
+    docker:
+      - image: ethereum/solidity-buildpack-deps:ubuntu1810
     environment:
       TERM: xterm
       ASAN_OPTIONS: check_initialization_order=true:detect_stack_use_after_return=true:strict_init_order=true:strict_string_checks=true:detect_invalid_pointer_pairs=2
@@ -585,7 +605,7 @@ workflows:
       - b_osx: *workflow_trigger_on_tags
       - t_osx_cli: *workflow_osx
 
-      # Ubuntu 18.10 build and tests
+      # Ubuntu 19.04 build and tests
       - b_ubu: *workflow_trigger_on_tags
       - t_ubu_cli: *workflow_ubuntu1904
       - t_ubu_homestead: *workflow_ubuntu1904
@@ -600,8 +620,8 @@ workflows:
 
       # ASan build and tests
       - b_ubu_asan: *workflow_trigger_on_tags
-      - t_ubu_asan_constantinople: *workflow_ubuntu1904_asan
-      - t_ubu_asan_cli: *workflow_ubuntu1904_asan
+      - t_ubu_asan_constantinople: *workflow_ubuntu1810_asan
+      - t_ubu_asan_cli: *workflow_ubuntu1810_asan
 
       # Emscripten build and selected tests
       - b_ems: *workflow_trigger_on_tags
