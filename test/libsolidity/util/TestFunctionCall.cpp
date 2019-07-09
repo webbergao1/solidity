@@ -92,7 +92,6 @@ string TestFunctionCall::format(
 		string result;
 		if (!_renderResult)
 		{
-			bytes output = m_call.expectations.rawBytes();
 			bool const isFailure = m_call.expectations.failure;
 			result = isFailure ?
 				failure :
@@ -154,75 +153,32 @@ string TestFunctionCall::formatBytesParameters(
 	stringstream os;
 	string functionName{_signature.substr(0, _signature.find("("))};
 
-	/// If output is empty, do not format anything.
 	if (_bytes.empty())
 		return {};
 
-	/// Create parameters from Contract ABI. Used to generate values for
-	/// auto-correction during interactive update routine.
-	boost::optional<ParameterList> abiParams = ContractABIUtils().parametersFromJson(
+	stringstream bs;
+	bs << endl << _bytes;
+	_errorReporter.warning("Following bytes were returned by the call: " + bs.str());
+
+	boost::optional<ParameterList> abiParams = ContractABIUtils::parametersFromJson(
 		_errorReporter,
 		m_contractABI,
 		functionName
 	);
 
-
 	if (abiParams)
 	{
-		boost::optional<ParameterList> preferredParams = ContractABIUtils().preferredParameters(
+		boost::optional<ParameterList> preferredParams = ContractABIUtils::preferredParameters(
 			_errorReporter,
 			_params,
 			abiParams.get(),
 			_bytes
 		);
 
-		/// Format output bytes with the given parameters. ABI type takes precedence if:
-		/// - size of ABI type is greater
-		/// - given expected type does not match and needs to be overridden in order
-		///   to generate a valid output of the parameter
-		auto it = _bytes.begin();
-		auto abiParam = abiParams.get().begin();
-		size_t paramIndex = 1;
-		for (auto& param: preferredParams.get())
+		if (preferredParams)
 		{
-			if (m_contractABI)
-				param.abiType.size = std::max((*abiParam).abiType.size, param.abiType.size);
-
-			long offset = static_cast<long>(param.abiType.size);
-			auto offsetIter = it + offset;
-			bytes byteRange{it, offsetIter};
-
-			/// Override type with ABI type if given one does not match.
-			auto type = param.abiType;
-			if (m_contractABI)
-				if ((*abiParam).abiType.type > param.abiType.type)
-				{
-					type = (*abiParam).abiType;
-					_errorReporter.warning(
-						"Type of parameter " + to_string(paramIndex) +
-						" does not match the one inferred from ABI."
-					);
-				}
-
-			/// Prints obtained result if it does not match the expectation
-			/// and prints the expected result otherwise.
-			/// Highlights parameter only if it does not match.
-			if (byteRange != param.rawBytes)
-				AnsiColorized(
-					os,
-					_highlight,
-					{dev::formatting::RED_BACKGROUND}
-				) << BytesUtils().formatBytes(byteRange, type);
-			else
-				os << param.rawString;
-
-			if (abiParam != abiParams.get().end())
-				abiParam++;
-
-			it += offset;
-			paramIndex++;
-			if (&param != &preferredParams.get().back())
-				os << ", ";
+			ContractABIUtils::overwriteWithABITypes(_errorReporter, preferredParams.get(), abiParams.get());
+			os << BytesUtils::formatBytesRange(_bytes, preferredParams.get(), _highlight);
 		}
 	}
 	else
@@ -233,7 +189,7 @@ string TestFunctionCall::formatBytesParameters(
 			_bytes.size() / 32,
 			Parameter{bytes(), "", ABIType{ABIType::UnsignedDec}, FormatInfo{}}
 		);
-		os << BytesUtils().formatBytesRange(_bytes, parameters, _highlight);
+		os << BytesUtils::formatBytesRange(_bytes, parameters, _highlight);
 	}
 	return os.str();
 }
@@ -246,11 +202,14 @@ string TestFunctionCall::formatRawParameters(
 	stringstream os;
 	for (auto const& param: _params)
 	{
-		if (param.format.newline)
-			os << endl << _linePrefix << "// ";
-		os << param.rawString;
-		if (&param != &_params.back())
-			os << ", ";
+		if (!param.rawString.empty())
+		{
+			if (param.format.newline)
+				os << endl << _linePrefix << "// ";
+			os << param.rawString;
+			if (&param != &_params.back())
+				os << ", ";
+		}
 	}
 	return os.str();
 }

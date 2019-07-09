@@ -16,6 +16,8 @@
 
 #include <test/libsolidity/util/SoltestTypes.h>
 
+#include <test/libsolidity/util/SoltestErrors.h>
+
 #include <libdevcore/CommonData.h>
 
 #include <json/json.h>
@@ -38,21 +40,31 @@ class ContractABIUtils
 public:
 	/// Parses and translates Solidity's ABI types as Json string into
 	/// a list of internal type representations of isoltest.
-	boost::optional<ParameterList> parametersFromJson(
+	/// Creates parameters from Contract ABI and is used to generate values for
+	/// auto-correction during interactive update routine.
+	static boost::optional<ParameterList> parametersFromJson(
 		ErrorReporter& _errorReporter,
 		Json::Value const& _contractABI,
 		std::string const& _functionName
-	) const;
+	);
+
+	/// Overwrites types given by _inputParameters with ABI types if given
+	/// ones do not match.
+	static void overwriteWithABITypes(
+		ErrorReporter& _errorReporter,
+		ParameterList& _inputParameters,
+		ParameterList const& _abiParameters
+	);
 
 	/// If parameter count does not match, take types defined by ABI, but only
 	/// if the contract ABI is defined (needed for format tests where the actual
 	/// result does not matter).
-	ParameterList preferredParameters(
+	static ParameterList preferredParameters(
 		ErrorReporter& _errorReporter,
 		ParameterList const& _inputParameters,
 		ParameterList const& _abiParameters,
 		bytes _bytes
-	) const;
+	);
 
 private:
 	/// Parses and translates a single type and returns a list of
@@ -64,13 +76,13 @@ private:
 	/// `string` -> [`Unsigned`, `Unsigned`, `String`]
 	/// `bytes` -> [`Unsigned`, `Unsigned`, `HexString`]
 	/// ...
-	bool appendTypesFromName(
+	static bool appendTypesFromName(
 		Json::Value const& _functionOutput,
 		ABITypes& _addressTypes,
 		ABITypes& _valueTypes,
 		ABITypes& _dynamicTypes,
 		bool _isCompoundType = false
-	) const;
+	);
 };
 
 }

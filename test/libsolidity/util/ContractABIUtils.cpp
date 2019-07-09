@@ -17,9 +17,14 @@
 
 #include <test/libsolidity/util/ContractABIUtils.h>
 
+#include <test/libsolidity/util/SoltestErrors.h>
+
 #include <liblangutil/Common.h>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/bind.hpp>
+#include <boost/range/algorithm_ext/for_each.hpp>
 
 #include <fstream>
 #include <memory>
@@ -44,7 +49,7 @@ auto arraySize(string const& _arrayType) -> size_t
 	auto leftBrack = _arrayType.find("[");
 	auto rightBrack = _arrayType.find("]");
 
-	//	soltestAssert(leftBrack != string::npos && rightBrack != string::npos, "");
+	soltestAssert(leftBrack != string::npos && rightBrack != string::npos, "");
 
 	string size = _arrayType.substr(leftBrack + 1, rightBrack - leftBrack - 1);
 	return static_cast<size_t>(stoi(size));
@@ -116,7 +121,7 @@ boost::optional<dev::solidity::test::ParameterList> ContractABIUtils::parameters
 	ErrorReporter& _errorReporter,
 	Json::Value const& _contractABI,
 	string const& _functionName
-) const
+)
 {
 	ParameterList addressTypeParams;
 	ParameterList valueTypeParams;
@@ -168,7 +173,7 @@ bool ContractABIUtils::appendTypesFromName(
 	ABITypes& _valueTypes,
 	ABITypes& _dynamicTypes,
 	bool _isCompoundType
-) const
+)
 {
 	string type = _functionOutput["type"].asString();
 	if (isBool(type))
@@ -222,13 +227,35 @@ bool ContractABIUtils::appendTypesFromName(
 	return true;
 }
 
+void ContractABIUtils::overwriteWithABITypes(
+	ErrorReporter& _errorReporter,
+	ParameterList& _inputParameters,
+	ParameterList const& _abiParameters
+)
+{
+	auto overwriteSize = [&](Parameter _a, Parameter& _b) -> void
+	{
+		if (
+			_a.abiType.size != _b.abiType.size ||
+			_a.abiType.type != _b.abiType.type
+		)
+		{
+			_errorReporter.warning(
+				"Type of parameter with value \"" + _b.rawString +
+				"\" does not match the one inferred from ABI."
+			);
+			_b = _a;
+		}
+	};
+	boost::for_each(_abiParameters, _inputParameters, boost::bind<void>(overwriteSize, _1, _2));
+}
 
 dev::solidity::test::ParameterList ContractABIUtils::preferredParameters(
 	ErrorReporter& _errorReporter,
 	ParameterList const& _inputParameters,
 	ParameterList const& _abiParameters,
 	bytes _bytes
-) const
+)
 {
 	ParameterList out;
 	if (_inputParameters.size() != _abiParameters.size())
