@@ -44,6 +44,16 @@ public:
 		std::string const& _functionName
 	) const;
 
+	/// If parameter count does not match, take types defined by ABI, but only
+	/// if the contract ABI is defined (needed for format tests where the actual
+	/// result does not matter).
+	ParameterList preferredParameters(
+		ErrorReporter& _errorReporter,
+		ParameterList const& _inputParameters,
+		ParameterList const& _abiParameters,
+		bytes _bytes
+	) const;
+
 private:
 	/// Parses and translates a single type and returns a list of
 	/// internal type representations of isoltest.

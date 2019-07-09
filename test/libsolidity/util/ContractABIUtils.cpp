@@ -23,6 +23,7 @@
 
 #include <fstream>
 #include <memory>
+#include <numeric>
 #include <regex>
 #include <stdexcept>
 
@@ -219,4 +220,30 @@ bool ContractABIUtils::appendTypesFromName(
 		return false;
 
 	return true;
+}
+
+
+dev::solidity::test::ParameterList ContractABIUtils::preferredParameters(
+	ErrorReporter& _errorReporter,
+	ParameterList const& _inputParameters,
+	ParameterList const& _abiParameters,
+	bytes _bytes
+) const
+{
+	ParameterList out;
+	if (_inputParameters.size() != _abiParameters.size())
+	{
+		auto sizeFold = [](size_t const _a, Parameter const& _b) { return _a + _b.abiType.size; };
+		size_t encodingSize = accumulate(_inputParameters.begin(), _inputParameters.end(), size_t{0}, sizeFold);
+
+		_errorReporter.warning(
+			"Encoding does not match byte range. The call returned " +
+			to_string(_bytes.size()) + " bytes, but " +
+			to_string(encodingSize) + " bytes were expected."
+		);
+		out = _abiParameters;
+	}
+	else
+		out = _inputParameters;
+	return out;
 }

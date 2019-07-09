@@ -175,6 +175,11 @@ struct Parameter
 	FormatInfo format;
 	/// Stores the parsed alignment, which can be either left(...) or right(...).
 	Alignment alignment = Alignment::None;
+	/// Compares _bytes to the bytes stored in this object.
+	bool matchesBytes(bytes _bytes) const
+	{
+		return rawBytes == _bytes;
+	}
 };
 using ParameterList = std::vector<Parameter>;
 

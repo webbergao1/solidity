@@ -102,7 +102,7 @@ public:
 	/// Formats given _bytes with type information passed in _abiTypes.
 	std::string formatBytesRange(
 		bytes _bytes,
-		std::vector<ABIType> _abiTypes,
+		ParameterList const& _parameters,
 		bool _highlight
 	);
 };

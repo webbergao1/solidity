@@ -238,30 +238,35 @@ string BytesUtils::formatBytes(
 
 string BytesUtils::formatBytesRange(
 	bytes _bytes,
-	vector<ABIType> _abiTypes,
+	ParameterList const& _parameters,
 	bool _highlight
 )
 {
 	stringstream os;
 	auto it = _bytes.begin();
 
-	for (auto const& type: _abiTypes)
+	for (auto const& parameter: _parameters)
 	{
-		size_t size = type.size;
+		size_t size = parameter.abiType.size;
 
 		long offset = static_cast<long>(size);
 		auto offsetIter = it + offset;
 		bytes byteRange{it, offsetIter};
 
-		AnsiColorized(
-			os,
-			_highlight,
-			{dev::formatting::RED_BACKGROUND}
-		) << formatBytes(byteRange, type);
+		if (!parameter.matchesBytes(byteRange))
+			AnsiColorized(
+				os,
+				_highlight,
+				{dev::formatting::RED_BACKGROUND}
+			) << formatBytes(byteRange, parameter.abiType);
+		else
+			os << parameter.rawString;
+
 
 		it += offset;
-		if (&type != &_abiTypes.back())
+		if (&parameter != &_parameters.back())
 			os << ", ";
 	}
 	return os.str();
 }
+

@@ -154,6 +154,10 @@ string TestFunctionCall::formatBytesParameters(
 	stringstream os;
 	string functionName{_signature.substr(0, _signature.find("("))};
 
+	/// If output is empty, do not format anything.
+	if (_bytes.empty())
+		return {};
+
 	/// Create parameters from Contract ABI. Used to generate values for
 	/// auto-correction during interactive update routine.
 	boost::optional<ParameterList> abiParams = ContractABIUtils().parametersFromJson(
@@ -162,31 +166,15 @@ string TestFunctionCall::formatBytesParameters(
 		functionName
 	);
 
+
 	if (abiParams)
 	{
-		/// If parameter count does not match, take types defined by ABI, but only
-		/// if the contract ABI is defined (needed for format tests where the actual
-		/// result does not matter).
-		ParameterList preferredParams;
-
-		if (m_contractABI && (_params.size() != abiParams.get().size()))
-		{
-			auto sizeFold = [](size_t const _a, Parameter const& _b) { return _a + _b.abiType.size; };
-			size_t encodingSize = std::accumulate(_params.begin(), _params.end(), size_t{0}, sizeFold);
-
-			_errorReporter.warning(
-				"Encoding does not match byte range. The call returned " +
-				to_string(_bytes.size()) + " bytes, but " +
-				to_string(encodingSize) + " bytes were expected."
-			);
-			preferredParams = abiParams.get();
-		}
-		else
-			preferredParams = _params;
-
-		/// If output is empty, do not format anything.
-		if (_bytes.empty())
-			return {};
+		boost::optional<ParameterList> preferredParams = ContractABIUtils().preferredParameters(
+			_errorReporter,
+			_params,
+			abiParams.get(),
+			_bytes
+		);
 
 		/// Format output bytes with the given parameters. ABI type takes precedence if:
 		/// - size of ABI type is greater
@@ -195,13 +183,12 @@ string TestFunctionCall::formatBytesParameters(
 		auto it = _bytes.begin();
 		auto abiParam = abiParams.get().begin();
 		size_t paramIndex = 1;
-		for (auto const& param: preferredParams)
+		for (auto& param: preferredParams.get())
 		{
-			size_t size = param.abiType.size;
 			if (m_contractABI)
-				size = std::max((*abiParam).abiType.size, param.abiType.size);
+				param.abiType.size = std::max((*abiParam).abiType.size, param.abiType.size);
 
-			long offset = static_cast<long>(size);
+			long offset = static_cast<long>(param.abiType.size);
 			auto offsetIter = it + offset;
 			bytes byteRange{it, offsetIter};
 
@@ -234,15 +221,19 @@ string TestFunctionCall::formatBytesParameters(
 
 			it += offset;
 			paramIndex++;
-			if (&param != &preferredParams.back())
+			if (&param != &preferredParams.get().back())
 				os << ", ";
 		}
 	}
 	else
 	{
-		ABITypes types;
-		fill_n(back_inserter(types), _bytes.size() / 32, ABIType{ABIType::UnsignedDec});
-		os << BytesUtils().formatBytesRange(_bytes, types, _highlight);
+		ParameterList parameters;
+		fill_n(
+			back_inserter(parameters),
+			_bytes.size() / 32,
+			Parameter{bytes(), "", ABIType{ABIType::UnsignedDec}, FormatInfo{}}
+		);
+		os << BytesUtils().formatBytesRange(_bytes, parameters, _highlight);
 	}
 	return os.str();
 }
