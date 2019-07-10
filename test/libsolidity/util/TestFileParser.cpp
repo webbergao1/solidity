@@ -282,8 +282,8 @@ Parameter TestFileParser::parseParameter()
 			if (parameter.alignment != Parameter::Alignment::None)
 				throw Error(Error::Type::ParserError, "String literals cannot be aligned or padded.");
 
-			parameter.abiType = ABIType{ABIType::String, ABIType::AlignLeft, 32};
 			string parsed = parseString();
+			parameter.abiType = {ABIType::String, ABIType::AlignLeft, parsed.size()};
 			parameter.rawString += "\"" + parsed + "\"";
 			parameter.rawBytes = BytesUtils().applyAlign(
 				Parameter::Alignment::Left,
@@ -571,8 +571,39 @@ string TestFileParser::Scanner::scanString()
 
 	while (current() != '\"')
 	{
-		str += current();
-		advance();
+		if (current() == '\\')
+		{
+			advance();
+			switch (current())
+			{
+				case '\\':
+					str += current();
+					advance();
+					break;
+				case 'n':
+					str += '\n';
+					advance();
+					break;
+				case 't':
+					str += '\t';
+					advance();
+					break;
+				case '0':
+					str += '\0';
+					advance();
+					break;
+				default:
+					str += "\\";
+					str += current();
+					advance();
+					break;
+			}
+		}
+		else
+		{
+			str += current();
+			advance();
+		}
 	}
 	return str;
 }
