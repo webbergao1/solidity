@@ -68,17 +68,27 @@ private:
 	void reset();
 	bool shouldVisit(ContractDefinition const& _contract);
 	bool shouldVisit(FunctionDefinition const& _function);
+	void pushBlock(smt::Expression const& _block);
+	void popBlock();
 	//@}
 
 	/// Sort helpers.
 	//@{
+	smt::SortPointer functionSort(FunctionDefinition const& _function);
 	smt::SortPointer interfaceSort();
 	//@}
 
 	/// Predicate helpers.
 	//@{
+	std::string predicateName(FunctionDefinition const& _function);
+
 	/// @returns a new block of given _sort and _name.
 	std::shared_ptr<smt::SymbolicFunctionVariable> createBlock(smt::SortPointer _sort, std::string _name);
+
+	/// Creates a block for the given _function or increases its SSA index
+	/// if the block already exists which in practice creates a new function.
+	void createFunctionBlock(FunctionDefinition const& _function);
+	std::vector<smt::Expression> functionParameters(FunctionDefinition const& _function);
 
 	/// Constructor predicate over current variables.
 	smt::Expression constructor();
@@ -86,6 +96,11 @@ private:
 	smt::Expression interface();
 	/// Error predicate over current variables.
 	smt::Expression error();
+
+	smt::Expression predicateCurrent(ASTNode const* _node);
+	/// Predicate for block _node over the variables at the latest
+	/// block entry.
+	smt::Expression predicateEntry(ASTNode const* _node);
 	//@}
 
 	/// Solver related.
@@ -107,6 +122,9 @@ private:
 	/// Artificial Error predicate.
 	/// Single error block for all assertions.
 	std::shared_ptr<smt::SymbolicVariable> m_errorPredicate;
+
+	/// Maps AST nodes to their predicates.
+	std::unordered_map<ASTNode const*, std::shared_ptr<smt::SymbolicVariable>> m_predicates;
 	//@}
 
 	/// Variables.
@@ -117,6 +135,9 @@ private:
 	/// State variables.
 	/// Used to create all predicates.
 	std::vector<VariableDeclaration const*> m_stateVariables;
+
+	/// Input sorts for function predicates.
+	std::map<FunctionDefinition const*, smt::SortPointer> m_functionSorts;
 	//@}
 
 	/// Verification targets.
@@ -130,6 +151,10 @@ private:
 	/// Control-flow.
 	//@{
 	FunctionDefinition const* m_currentFunction = nullptr;
+	/// Number of basic blocks created for the body of the current function.
+	unsigned m_functionBlocks = 0;
+	/// The current control flow path.
+	std::vector<smt::Expression> m_path;
 	//@}
 
 	/// ErrorReporter that comes from CompilerStack.
