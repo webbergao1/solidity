@@ -135,8 +135,20 @@ string IRStorageItem::storeValue(string const& _value, Type const& _sourceType) 
 
 string IRStorageItem::setToZero() const
 {
-	solUnimplementedAssert(m_type->isValueType(), "");
-	return storeValue(m_context.utils().zeroValueFunction(*m_type) + "()", *m_type);
+	if (m_type->isValueType())
+		return storeValue(m_context.utils().zeroValueFunction(*m_type) + "()", *m_type);
+
+	if (ArrayType const* arrayType = dynamic_cast<decltype(arrayType)>(m_type))
+		if (!arrayType->isDynamicallySized())
+			return m_context.utils().clearStorageRangeFunction(*arrayType->baseType()) +
+				"(" +
+				m_slot +
+				", add(" +
+				m_slot +
+				", " + arrayType->storageSize().str() +
+				"))\n";
+
+	solUnimplemented("setToZero for type " + m_type->identifier() + " not yet implemented!");
 }
 
 IRStorageArrayLength::IRStorageArrayLength(IRGenerationContext& _context, string _slot, Type const& _type, ArrayType const& _arrayType):

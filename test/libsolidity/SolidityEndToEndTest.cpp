@@ -4600,12 +4600,14 @@ BOOST_AUTO_TEST_CASE(fixed_array_cleanup)
 			function clear() public { delete data; }
 		}
 	)";
-	compileAndRun(sourceCode);
-	BOOST_CHECK(storageEmpty(m_contractAddress));
-	ABI_CHECK(callContractFunction("fill()"), bytes());
-	BOOST_CHECK(!storageEmpty(m_contractAddress));
-	ABI_CHECK(callContractFunction("clear()"), bytes());
-	BOOST_CHECK(storageEmpty(m_contractAddress));
+	ALSO_VIA_YUL(
+		compileAndRun(sourceCode);
+		BOOST_CHECK(storageEmpty(m_contractAddress));
+		ABI_CHECK(callContractFunction("fill()"), bytes());
+		BOOST_CHECK(!storageEmpty(m_contractAddress));
+		ABI_CHECK(callContractFunction("clear()"), bytes());
+		BOOST_CHECK(storageEmpty(m_contractAddress));
+	);
 }
 
 BOOST_AUTO_TEST_CASE(short_fixed_array_cleanup)
@@ -4621,12 +4623,14 @@ BOOST_AUTO_TEST_CASE(short_fixed_array_cleanup)
 			function clear() public { delete data; }
 		}
 	)";
-	compileAndRun(sourceCode);
-	BOOST_CHECK(storageEmpty(m_contractAddress));
-	ABI_CHECK(callContractFunction("fill()"), bytes());
-	BOOST_CHECK(!storageEmpty(m_contractAddress));
-	ABI_CHECK(callContractFunction("clear()"), bytes());
-	BOOST_CHECK(storageEmpty(m_contractAddress));
+	ALSO_VIA_YUL(
+		compileAndRun(sourceCode);
+		BOOST_CHECK(storageEmpty(m_contractAddress));
+		ABI_CHECK(callContractFunction("fill()"), bytes());
+		BOOST_CHECK(!storageEmpty(m_contractAddress));
+		ABI_CHECK(callContractFunction("clear()"), bytes());
+		BOOST_CHECK(storageEmpty(m_contractAddress));
+	);
 }
 
 BOOST_AUTO_TEST_CASE(dynamic_array_cleanup)
