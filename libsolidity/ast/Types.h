@@ -144,6 +144,10 @@ public:
 		InaccessibleDynamic
 	};
 
+	Type() = default;
+	virtual ~Type() = default;
+
+
 	/// @{
 	/// @name Factory functions
 	/// Factory functions that convert an AST @ref TypeName to a Type.
