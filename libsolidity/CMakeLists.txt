@@ -13,7 +13,7 @@ set(EXECUTABLE solidity)
 file(GLOB HEADERS "*/*.h") 
 
 include_directories(BEFORE ..)
-add_library(${EXECUTABLE} ${SRC_LIST} ${HEADERS})
+add_library(${EXECUTABLE} ${SRC_LIST} ${HEADERS} codegen/Const.h)
 
 eth_use(${EXECUTABLE} REQUIRED Dev::soldevcore Solidity::solevmasm)
 

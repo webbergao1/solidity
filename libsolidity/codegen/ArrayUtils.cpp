@@ -27,6 +27,7 @@
 #include <libsolidity/ast/Types.h>
 #include <libsolidity/interface/Utils.h>
 #include <libsolidity/codegen/LValue.h>
+#include <libsolidity/codegen/Const.h>
 
 using namespace std;
 using namespace dev;
@@ -215,7 +216,7 @@ void ArrayUtils::copyArrayToStorage(ArrayType const& _targetType, ArrayType cons
 					solUnimplemented("Copying of type " + _sourceType.toString(false) + " to storage not yet supported.");
 				// stack: target_ref target_data_end source_data_pos target_data_pos source_data_end [target_byte_offset] [source_byte_offset] <source_value>...
 				solAssert(
-					2 + byteOffsetSize + sourceBaseType->sizeOnStack() <= 16,
+					2 + byteOffsetSize + sourceBaseType->sizeOnStack() <= MAX_VAR_COUNT,
 					"Stack too deep, try removing local variables."
 				);
 				// fetch target storage reference

@@ -26,6 +26,7 @@
 #include <libdevcore/SHA3.h>
 #include <libevmasm/CommonSubexpressionEliminator.h>
 #include <libevmasm/AssemblyItem.h>
+#include <libsolidity/codegen/Const.h>
 
 using namespace std;
 using namespace dev;
@@ -467,7 +468,7 @@ void CSECodeGenerator::appendDup(int _fromPosition, SourceLocation const& _locat
 {
 	assertThrow(_fromPosition != c_invalidPosition, OptimizerException, "");
 	int instructionNum = 1 + m_stackHeight - _fromPosition;
-	assertThrow(instructionNum <= 16, StackTooDeepException, "Stack too deep, try removing local variables.");
+	assertThrow(instructionNum <= MAX_VAR_COUNT, StackTooDeepException, "Stack too deep, try removing local variables.");
 	assertThrow(1 <= instructionNum, OptimizerException, "Invalid stack access.");
 	appendItem(AssemblyItem(dupInstruction(instructionNum), _location));
 	m_stack[m_stackHeight] = m_stack[_fromPosition];
@@ -480,7 +481,7 @@ void CSECodeGenerator::appendOrRemoveSwap(int _fromPosition, SourceLocation cons
 	if (_fromPosition == m_stackHeight)
 		return;
 	int instructionNum = m_stackHeight - _fromPosition;
-	assertThrow(instructionNum <= 16, StackTooDeepException, "Stack too deep, try removing local variables.");
+	assertThrow(instructionNum <= MAX_VAR_COUNT, StackTooDeepException, "Stack too deep, try removing local variables.");
 	assertThrow(1 <= instructionNum, OptimizerException, "Invalid stack access.");
 	appendItem(AssemblyItem(swapInstruction(instructionNum), _location));
 

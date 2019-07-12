@@ -24,6 +24,7 @@
 #include <functional>
 #include <libdevcore/Common.h>
 #include <libdevcore/Assertions.h>
+#include <libsolidity/codegen/Const.h>
 #include "Exceptions.h"
 
 namespace dev

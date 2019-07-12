@@ -30,6 +30,7 @@
 #include <libsolidity/ast/AST.h>
 #include <libsolidity/codegen/ExpressionCompiler.h>
 #include <libsolidity/codegen/CompilerUtils.h>
+#include <libsolidity/codegen/Const.h>
 using namespace std;
 using namespace dev;
 using namespace dev::solidity;
@@ -42,7 +43,7 @@ class StackHeightChecker
 public:
 	StackHeightChecker(CompilerContext const& _context):
 		m_context(_context), stackHeight(m_context.stackHeight()) {}
-	void check() { solAssert(m_context.stackHeight() == stackHeight, std::string("I sense a disturbance in the stack: ") + std::to_string(m_context.stackHeight()) + " vs " + std::to_string(stackHeight)); }
+	void check(int n) { solAssert(m_context.stackHeight() == stackHeight, std::to_string(n) + std::string("I sense a disturbance in the stack: ") + std::to_string(m_context.stackHeight()) + " vs " + std::to_string(stackHeight)); }
 private:
 	CompilerContext const& m_context;
 	unsigned stackHeight;
@@ -486,11 +487,11 @@ bool ContractCompiler::visit(FunctionDefinition const& _function)
 		stackLayout.push_back(i);
 	stackLayout += vector<int>(c_localVariablesSize, -1);
 
-	if (stackLayout.size() > 17)
+	if (stackLayout.size() > 33)
 		BOOST_THROW_EXCEPTION(
 			CompilerError() <<
 			errinfo_sourceLocation(_function.location()) <<
-			errinfo_comment("Stack too deep, try removing local variables.")
+			errinfo_comment("Stack too deep, try removing local variables 1.")
 		);
 	while (stackLayout.back() != int(stackLayout.size() - 1))
 		if (stackLayout.back() < 0)
@@ -553,11 +554,11 @@ bool ContractCompiler::visit(InlineAssembly const& _inlineAssembly)
 					if (m_context.isLocalVariable(variable))
 					{
 						int stackDiff = _assembly.deposit() - m_context.baseStackOffsetOfVariable(*variable);
-						if (stackDiff < 1 || stackDiff > 16)
+						if (stackDiff < 1 || stackDiff > MAX_VAR_COUNT)
 							BOOST_THROW_EXCEPTION(
 								CompilerError() <<
 								errinfo_sourceLocation(_inlineAssembly.location()) <<
-								errinfo_comment("Stack too deep, try removing local variables.")
+								errinfo_comment("Stack too deep, try removing local variables 2.")
 							);
 						for (unsigned i = 0; i < variable->type()->sizeOnStack(); ++i)
 							_assembly.append(dupInstruction(stackDiff));
@@ -594,11 +595,11 @@ bool ContractCompiler::visit(InlineAssembly const& _inlineAssembly)
 				);
 				unsigned size = variable->type()->sizeOnStack();
 				int stackDiff = _assembly.deposit() - m_context.baseStackOffsetOfVariable(*variable) - size;
-				if (stackDiff > 16 || stackDiff < 1)
+				if (stackDiff > MAX_VAR_COUNT || stackDiff < 1)
 					BOOST_THROW_EXCEPTION(
 						CompilerError() <<
 						errinfo_sourceLocation(_inlineAssembly.location()) <<
-						errinfo_comment("Stack too deep, try removing local variables.")
+						errinfo_comment("Stack too deep, try removing local variables 3.")
 					);
 				for (unsigned i = 0; i < size; ++i) {
 					_assembly.append(swapInstruction(stackDiff));
@@ -630,7 +631,7 @@ bool ContractCompiler::visit(IfStatement const& _ifStatement)
 	}
 	m_context << endTag;
 
-	checker.check();
+	checker.check(1);
 	return false;
 }
 
@@ -669,7 +670,7 @@ bool ContractCompiler::visit(WhileStatement const& _whileStatement)
 	m_continueTags.pop_back();
 	m_breakTags.pop_back();
 
-	checker.check();
+	checker.check(2);
 	return false;
 }
 
@@ -710,7 +711,7 @@ bool ContractCompiler::visit(ForStatement const& _forStatement)
 	m_continueTags.pop_back();
 	m_breakTags.pop_back();
 
-	checker.check();
+	checker.check(3);
 	return false;
 }
 
@@ -797,7 +798,7 @@ bool ContractCompiler::visit(VariableDeclarationStatement const& _variableDeclar
 			}
 		}
 	}
-	checker.check();
+	checker.check(4);
 	return false;
 }
 
@@ -808,7 +809,7 @@ bool ContractCompiler::visit(ExpressionStatement const& _expressionStatement)
 	Expression const& expression = _expressionStatement.expression();
 	compileExpression(expression);
 	CompilerUtils(m_context).popStackElement(*expression.annotation().type);
-	checker.check();
+	checker.check(5);
 	return false;
 }
 
@@ -817,7 +818,7 @@ bool ContractCompiler::visit(PlaceholderStatement const& _placeholderStatement)
 	StackHeightChecker checker(m_context);
 	CompilerContext::LocationSetter locationSetter(m_context, _placeholderStatement);
 	appendModifierOrFunctionCode();
-	checker.check();
+	checker.check(6);
 	return true;
 }
 

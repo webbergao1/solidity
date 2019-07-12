@@ -24,6 +24,7 @@
 #include <libsolidity/codegen/CompilerUtils.h>
 #include <libsolidity/ast/AST.h>
 #include <libsolidity/codegen/Compiler.h>
+#include <libsolidity/codegen/Const.h>
 #include <libsolidity/interface/Version.h>
 #include <libsolidity/inlineasm/AsmData.h>
 #include <libsolidity/inlineasm/AsmStack.h>
@@ -277,7 +278,7 @@ void CompilerContext::appendInlineAssembly(
 		int stackDiff = _assembly.deposit() - startStackHeight + stackDepth;
 		if (_context == assembly::CodeGenerator::IdentifierContext::LValue)
 			stackDiff -= 1;
-		if (stackDiff < 1 || stackDiff > 16)
+		if (stackDiff < 1 || stackDiff > MAX_VAR_COUNT)
 			BOOST_THROW_EXCEPTION(
 				CompilerError() <<
 				errinfo_comment("Stack too deep, try removing local variables.")

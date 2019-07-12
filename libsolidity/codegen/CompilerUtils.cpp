@@ -25,6 +25,7 @@
 #include <libevmasm/Instruction.h>
 #include <libsolidity/codegen/ArrayUtils.h>
 #include <libsolidity/codegen/LValue.h>
+#include <libsolidity/codegen/Const.h>
 
 using namespace std;
 
@@ -200,7 +201,7 @@ void CompilerUtils::encodeToMemory(
 			// leave end_of_mem as dyn head pointer
 			m_context << Instruction::DUP1 << u256(32) << Instruction::ADD;
 			dynPointers++;
-			solAssert((argSize + dynPointers) < 16, "Stack too deep, try using less variables.");
+			solAssert((argSize + dynPointers) < MAX_VAR_COUNT, "Stack too deep, try using less variables.");
 		}
 		else
 		{
@@ -885,7 +886,7 @@ void CompilerUtils::moveToStackVariable(VariableDeclaration const& _variable)
 	unsigned const size = _variable.annotation().type->sizeOnStack();
 	solAssert(stackPosition >= size, "Variable size and position mismatch.");
 	// move variable starting from its top end in the stack
-	if (stackPosition - size + 1 > 16)
+	if (stackPosition - size + 1 > MAX_VAR_COUNT)
 		BOOST_THROW_EXCEPTION(
 			CompilerError() <<
 			errinfo_sourceLocation(_variable.location()) <<
@@ -897,7 +898,7 @@ void CompilerUtils::moveToStackVariable(VariableDeclaration const& _variable)
 
 void CompilerUtils::copyToStackTop(unsigned _stackDepth, unsigned _itemSize)
 {
-	solAssert(_stackDepth <= 16, "Stack too deep, try removing local variables.");
+	solAssert(_stackDepth <= MAX_VAR_COUNT, "Stack too deep, try removing local variables.");
 	for (unsigned i = 0; i < _itemSize; ++i)
 		m_context << dupInstruction(_stackDepth);
 }
@@ -919,14 +920,14 @@ void CompilerUtils::moveIntoStack(unsigned _stackDepth, unsigned _itemSize)
 
 void CompilerUtils::rotateStackUp(unsigned _items)
 {
-	solAssert(_items - 1 <= 16, "Stack too deep, try removing local variables.");
+	solAssert(_items - 1 <= MAX_VAR_COUNT, "Stack too deep, try removing local variables.");
 	for (unsigned i = 1; i < _items; ++i)
 		m_context << swapInstruction(_items - i);
 }
 
 void CompilerUtils::rotateStackDown(unsigned _items)
 {
-	solAssert(_items - 1 <= 16, "Stack too deep, try removing local variables.");
+	solAssert(_items - 1 <= MAX_VAR_COUNT, "Stack too deep, try removing local variables.");
 	for (unsigned i = 1; i < _items; ++i)
 		m_context << swapInstruction(i);
 }

@@ -31,7 +31,9 @@
 #include <libsolidity/codegen/CompilerContext.h>
 #include <libsolidity/codegen/CompilerUtils.h>
 #include <libsolidity/codegen/LValue.h>
+#include <libsolidity/codegen/Const.h>
 #include <libevmasm/GasMeter.h>
+
 using namespace std;
 
 namespace dev
@@ -251,11 +253,11 @@ bool ExpressionCompiler::visit(Assignment const& _assignment)
 		}
 		if (lvalueSize > 0)
 		{
-			if (itemSize + lvalueSize > 16)
+			if (itemSize + lvalueSize > MAX_VAR_COUNT)
 				BOOST_THROW_EXCEPTION(
 					CompilerError() <<
 					errinfo_sourceLocation(_assignment.location()) <<
-					errinfo_comment("Stack too deep, try removing local variables.")
+					errinfo_comment("Stack too deep, try removing local variables 4.")
 				);
 			// value [lvalue_ref] updated_value
 			for (unsigned i = 0; i < itemSize; ++i)
