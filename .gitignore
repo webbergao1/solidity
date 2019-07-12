@@ -43,3 +43,4 @@ docs/utils/__pycache__
 browse.VC.db
 
 cmake-build-debug/
+.DS_Store
